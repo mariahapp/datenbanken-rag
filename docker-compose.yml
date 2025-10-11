@@ -1,0 +1,25 @@
+version: "3.9"
+
+services:
+  rag-app:
+    build: .
+    container_name: rag-app
+    command: ["python", "lib.py", "data"]
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - mongo
+    networks:
+      - rag-net
+
+  mongo:
+    image: mongo:latest
+    container_name: mongo
+    ports:
+      - "27017:27017"
+    networks:
+      - rag-net
+
+networks:
+  rag-net:
+    driver: bridge
