@@ -4,6 +4,8 @@ from pymongo import MongoClient,errors
 import uuid
 import time
 
+from pymongo import MongoClient
+
 def read_files(folder_path, filetypes=None):
     """
     Liest alle Dateien in einem Ordner (inkl. Unterordner) ein
@@ -72,10 +74,10 @@ def chunk_text(text, chunk_size=500, overlap=50):
 
         chunk_id += 1
         start += chunk_size - overlap
-
+    print(f"chuncks ausgabe: {chunks}")
     return chunks
 
-def connect_to_mongo(uri="mongodb://mongo:27017/", max_retries=10, delay=3):
+def connect_to_mongo(uri="mongodb://user123:password123@localhost:27017/", max_retries=10, delay=3):
     """Versucht mehrfach, sich mit MongoDB zu verbinden"""
     for attempt in range(max_retries):
         try:
@@ -89,16 +91,40 @@ def connect_to_mongo(uri="mongodb://mongo:27017/", max_retries=10, delay=3):
             time.sleep(delay)
     raise Exception("🚨 Verbindung zu MongoDB nach mehreren Versuchen fehlgeschlagen.")
 
+    #print(f"✅ In MongoDB gespeicherte Chunks: {count}")
+
 def save_chunks_to_mongo(chunks, db_name="rag_db", collection_name="raw_chunks"):
-    client = connect_to_mongo()    
+    client = connect_to_mongo()
     db = client[db_name]
     collection = db[collection_name]
 
     for chunk in chunks:
-        chunk["_id"] = str(uuid.uuid4())
-        collection.insert_one(chunk)
+        # Prüfen, ob dieser Chunk schon existiert
+        if not collection.find_one({"filename": chunk["filename"], "chunk_id": chunk["chunk_id"]}):
+            chunk["_id"] = str(uuid.uuid4())
+            collection.insert_one(chunk)
 
-    print(f"{len(chunks)} Chunks in MongoDB gespeichert.")
+    count = collection.count_documents({})
+    print(f"✅ In MongoDB gespeicherte Chunks: {count}")
+
+def show_chunks_from_mongo(uri="mongodb://user123:password123@localhost:27017/", db_name="rag_db", collection_name="raw_chunks"):
+    # Verbindung aufbauen
+    client = connect_to_mongo(uri)  # <- wieder die connect_to_mongo Funktion nutzen
+    db = client[db_name]
+    collection = db[collection_name]
+
+    # Anzahl der gespeicherten Chunks
+    count = collection.count_documents({})
+    print(f"📦 Anzahl der Chunks in MongoDB: {count}\n")
+
+    # Alle Chunks ausgeben (optional: nur Vorschau)
+    for doc in collection.find():
+        print(f"--- Chunk ID: {doc.get('chunk_id')} ---")
+        print(f"Datei: {doc.get('filename')}")
+        print(f"Text (Vorschau 200 Zeichen):\n{doc.get('text')[:200]}")
+        print("-----------------\n")
+
+
 
 
 
@@ -125,3 +151,5 @@ if __name__ == "__main__":
 
     # Alle Chunks auf einmal in MongoDB speichern
     save_chunks_to_mongo(all_chunks)
+
+    show_chunks_from_mongo()
