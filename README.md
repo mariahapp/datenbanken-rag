@@ -22,16 +22,16 @@ Du willst aus jeder Datei einen **Textstring** bekommen, der später verarbeitet
   - Speichere **jeden Chunk + Metadaten** (Dateiname, Pfad, Dateityp)
   - **Vorteil:** später einfacher Zugriff für Retrieval  
 - **Struktur z. B.:**
-```json
-{
+
+
     "filename": "database.md",
     "filepath": "/app/data/database.md",
     "filetype": "md",
     "chunk_id": 1,
     "text": "Hier steht der Textabschnitt ..."
-}
 
 ---
+
 
 ## Schritt 5: Vektorisierung
 - Für **RAG** brauchen wir **semantische Embeddings**
@@ -60,4 +60,3 @@ Du willst aus jeder Datei einen **Textstring** bekommen, der später verarbeitet
 5. **Embeddings erstellen & in pgvector speichern**
 
 ➡️ **Retrieval + LLM → RAG-System funktioniert**
-
