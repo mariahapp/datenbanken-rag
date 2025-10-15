@@ -77,7 +77,7 @@ def chunk_text(text, chunk_size=500, overlap=50):
     print(f"chuncks ausgabe: {chunks}")
     return chunks
 
-def connect_to_mongo(uri="mongodb://user123:password123@localhost:27017/", max_retries=10, delay=3):
+def connect_to_mongo(uri="mongodb://user123:password123@mongo:27017/", max_retries=10, delay=3):
     """Versucht mehrfach, sich mit MongoDB zu verbinden"""
     for attempt in range(max_retries):
         try:
@@ -107,7 +107,7 @@ def save_chunks_to_mongo(chunks, db_name="rag_db", collection_name="raw_chunks")
     count = collection.count_documents({})
     print(f"✅ In MongoDB gespeicherte Chunks: {count}")
 
-def show_chunks_from_mongo(uri="mongodb://user123:password123@localhost:27017/", db_name="rag_db", collection_name="raw_chunks"):
+def show_chunks_from_mongo(uri="mongodb://user123:password123@mongo:27017/", db_name="rag_db", collection_name="raw_chunks"):
     # Verbindung aufbauen
     client = connect_to_mongo(uri)  # <- wieder die connect_to_mongo Funktion nutzen
     db = client[db_name]
