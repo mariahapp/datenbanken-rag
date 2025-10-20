@@ -4,7 +4,7 @@ FROM python:3.11-slim
 # Arbeitsverzeichnis im Container
 WORKDIR /app
 
-# Systemabhängigkeiten für PyMuPDF
+# Systemabhängigkeiten
 RUN apt-get update && apt-get install -y \
     build-essential \
     libmupdf-dev \

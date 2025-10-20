@@ -4,6 +4,7 @@ from pymongo import MongoClient, errors
 import uuid
 import time
 
+# return list of tupels
 def read_files(folder_path, filetypes=None):
     if filetypes is None:
         filetypes = ["pdf", "txt", "md"]
@@ -17,18 +18,21 @@ def read_files(folder_path, filetypes=None):
                 collected_files.append((ext, full_path, file))
     return collected_files
 
+# PDF → Text
 def extract_pdf_content(pdf_datei):
     doc = fitz.open(pdf_datei)
     text = "".join([page.get_text() for page in doc])
     return text
 
+# Textdateien → String
 def extract_text_file(file_path):
     try:
         with open(file_path, "r", encoding="utf-8") as f:
             return f.read()
     except Exception as e:
         return f"[Fehler beim Lesen]: {e}"
-
+    
+# mapping for file type
 def extract_file_content(file_path, file_type):
     if file_type == "pdf":
         return extract_pdf_content(file_path)
@@ -37,6 +41,7 @@ def extract_file_content(file_path, file_type):
     else:
         return ""
 
+# return list of dicts
 def chunk_text(text, chunk_size=500, overlap=50, debug=False):
     words = text.split()
     chunks = []
@@ -56,6 +61,7 @@ def chunk_text(text, chunk_size=500, overlap=50, debug=False):
         print(f"[DEBUG] {len(chunks)} Chunks erzeugt")
     return chunks
 
+# return db client object
 def connect_to_mongo(uri=None, max_retries=10, delay=3):
     if uri is None:
         uri = os.getenv("MONGO_URI", "mongodb://user123:password123@mongo:27017/")
@@ -70,6 +76,7 @@ def connect_to_mongo(uri=None, max_retries=10, delay=3):
             time.sleep(delay)
     raise Exception("🚨 Verbindung zu MongoDB fehlgeschlagen.")
 
+# use client object to save chunks in db
 def save_chunks_to_mongo(chunks, db_name="rag_db", collection_name="raw_chunks", uri=None):
     client = connect_to_mongo(uri)
     db = client[db_name]
@@ -90,12 +97,12 @@ def save_chunks_to_mongo(chunks, db_name="rag_db", collection_name="raw_chunks",
     print(f"✅ {inserted_count} neue Chunks hinzugefügt.")
     print(f"📦 Gesamtzahl Chunks in MongoDB: {total}")
 
-def show_chunks_from_mongo(uri=None, db_name="rag_db", collection_name="raw_chunks"):
-    client = connect_to_mongo(uri)
-    db = client[db_name]
-    collection = db[collection_name]
-    count = collection.count_documents({})
-    print(f"📦 Anzahl Chunks: {count}")
-    for doc in collection.find():
-        print(f"--- {doc.get('filename')} - Chunk {doc.get('chunk_id')} ---")
-        print(f"{doc.get('text')[:200]}...\n")
+#def show_chunks_from_mongo(uri=None, db_name="rag_db", collection_name="raw_chunks"):
+#    client = connect_to_mongo(uri)
+#    db = client[db_name]
+#    collection = db[collection_name]
+#    count = collection.count_documents({})
+#    print(f"📦 Anzahl Chunks: {count}")
+#    for doc in collection.find():
+#        print(f"--- {doc.get('filename')} - Chunk {doc.get('chunk_id')} ---")
+#        print(f"{doc.get('text')[:200]}...\n")
