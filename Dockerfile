@@ -4,18 +4,19 @@ FROM python:3.11-slim
 # Arbeitsverzeichnis im Container
 WORKDIR /app
 
-# Systemabhängigkeiten für PyMuPDF (fitz)
+# Systemabhängigkeiten für PyMuPDF
 RUN apt-get update && apt-get install -y \
     build-essential \
     libmupdf-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Python-Abhängigkeiten installieren
+# Kopiere requirements und installiere Python-Abhängigkeiten
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Skripte in den Container kopieren
-COPY lib.py ./
+# Kopiere Code
+COPY lib.py .
+COPY main.py .
 
-# Default-Befehl, kann beim Start überschrieben werden
-CMD ["python", "lib.py", "data"]
+# Standard-Befehl
+CMD ["python", "main.py"]
