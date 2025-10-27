@@ -45,6 +45,22 @@ services:
       - postgres_data:/data/postgres_db
     networks:                    
         - rag-net
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"  # Ollama API Port
+    volumes:
+      - ollama_data:/root/.ollama  # Persistente Speicherung der Modelle
+    environment:
+      - OLLAMA_MODEL=mxbai-embed-small  # Beispielmodell
+    restart: unless-stopped
+    networks:                    
+        - rag-net
+
+
+
+
 networks:
   rag-net:
     driver: bridge
@@ -52,3 +68,9 @@ networks:
 volumes:
   mongo_data:
   postgres_data:
+  ollama_data:
+
+  
+
+
+    

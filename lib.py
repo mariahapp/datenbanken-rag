@@ -136,26 +136,26 @@ def connect_to_pg(max_retries=15, delay=3):
 
 
 
-#def generate_and_store_embeddings(chunks):
-#    print("🔢 Erstelle Embeddings mit Ollama ...")
-#    conn, cur = connect_to_pg()
-#    inserted = 0
-#
-#    for chunk in tqdm(chunks):
-#        text = chunk["text"]
-#        mongo_id = chunk["_id"]
-#
-#        try:
-#            emb = ollama.embeddings(model="mxbai-embed-large", prompt=text)["embedding"]
-#            cur.execute(
-#                "INSERT INTO chunk_embeddings (chunk_mongo_id, embedding) VALUES (%s, %s)",
-#                (mongo_id, emb)
-#            )
-#            inserted += 1
-#        except Exception as e:
-#            print(f"Fehler bei Embedding {mongo_id}: {e}")
-#            continue
-#
-#    conn.commit()
-#    conn.close()
-#    print(f"✅ {inserted} Embeddings in Postgres gespeichert.")
+def generate_and_store_embeddings(chunks):
+    print("🔢 Erstelle Embeddings mit Ollama ...")
+    conn, cur = connect_to_pg()
+    inserted = 0
+
+    for chunk in tqdm(chunks):
+        text = chunk["text"]
+        mongo_id = chunk["_id"]
+
+        try:
+            emb = ollama.embeddings(model="mxbai-embed-large", prompt=text)["embedding"]
+            cur.execute(
+                "INSERT INTO chunk_embeddings (chunk_mongo_id, embedding) VALUES (%s, %s)",
+                (mongo_id, emb)
+            )
+            inserted += 1
+        except Exception as e:
+            print(f"Fehler bei Embedding {mongo_id}: {e}")
+            continue
+
+    conn.commit()
+    conn.close()
+    print(f"✅ {inserted} Embeddings in Postgres gespeichert.")
