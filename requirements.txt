@@ -1,2 +1,5 @@
 pymongo
 PyMuPDF==1.22.5
+psycopg2-binary
+ollama 
+tqdm

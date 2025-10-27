@@ -1,7 +1,13 @@
 # pipeline for reading, splitting and saving of the documents
-
 import os
-from lib import read_files, extract_file_content, chunk_text, save_chunks_to_mongo
+from lib import (
+    read_files,
+    extract_file_content,
+    chunk_text,
+    save_chunks_to_mongo,
+    connect_to_pg
+    #generate_and_store_embeddings
+)
 
 def main():
     folder = os.environ.get("DATA_DIR", "/app/data") 
@@ -24,5 +30,13 @@ def main():
 
     save_chunks_to_mongo(all_chunks, uri=mongo_uri)
 
+    connect_to_pg()
+    # Nach Mongo-Speicherung → Embeddings erzeugen und in Postgres speichern
+    #generate_and_store_embeddings(all_chunks)
+
+ 
+
 if __name__ == "__main__":
     main()
+
+
