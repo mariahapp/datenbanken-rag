@@ -6,6 +6,7 @@ import time
 import psycopg2
 from tqdm import tqdm
 import ollama
+from langchain_ollama import OllamaEmbeddings
 
 # return list of tupels
 def read_files(folder_path, filetypes=None):
@@ -126,6 +127,12 @@ def connect_to_pg(max_retries=15, delay=3):
             conn.autocommit = True
             print("✅ Verbindung zu PostgreSQL hergestellt.")
             cur = conn.cursor()
+
+            # Wichtig: pgvector aktivieren
+            cur.execute("CREATE EXTENSION IF NOT EXISTS vector;")
+            print("✅ pgvector Extension aktiviert.")
+
+            print("✅ Verbindung zu PostgreSQL hergestellt.")
             return conn, cur
 
         except psycopg2.OperationalError as e:
@@ -136,26 +143,53 @@ def connect_to_pg(max_retries=15, delay=3):
 
 
 
-def generate_and_store_embeddings(chunks):
-    print("🔢 Erstelle Embeddings mit Ollama ...")
+# Liest alle Text-Chunks aus MongoDB, erzeugt Embeddings mit Ollama
+# und speichert sie in PostgreSQL (pgvector).
+def generate_embeddings(mongo_uri=None):
     conn, cur = connect_to_pg()
-    inserted = 0
 
-    for chunk in tqdm(chunks):
+    # ✅ Host aus ENV lesen
+    ollama_host = os.getenv("OLLAMA_HOST", "http://localhost:11434")
+
+    embed = OllamaEmbeddings(
+        model="mxbai-embed-small",
+        base_url=ollama_host
+    )
+
+    # Mongo lesen
+    client = connect_to_mongo(mongo_uri)
+    db = client["rag_db"]
+    collection = db["raw_chunks"]
+    chunks = list(collection.find({}, {"_id": 1, "text": 1}))
+
+    print(f"📄 {len(chunks)} Chunks aus MongoDB geladen.")
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS chunk_embeddings (
+            id SERIAL PRIMARY KEY,
+            chunk_mongo_id TEXT,
+            embedding VECTOR(1024)
+        );
+    """)
+
+    for chunk in tqdm(chunks, desc="Erstelle Embeddings"):
         text = chunk["text"]
         mongo_id = chunk["_id"]
 
         try:
-            emb = ollama.embeddings(model="mxbai-embed-large", prompt=text)["embedding"]
+            emb = embed.embed_query(text)
             cur.execute(
                 "INSERT INTO chunk_embeddings (chunk_mongo_id, embedding) VALUES (%s, %s)",
                 (mongo_id, emb)
             )
-            inserted += 1
         except Exception as e:
-            print(f"Fehler bei Embedding {mongo_id}: {e}")
+            print(f"⚠️ Fehler bei Chunk {mongo_id}: {e}")
             continue
 
     conn.commit()
     conn.close()
-    print(f"✅ {inserted} Embeddings in Postgres gespeichert.")
+    print("✅ Alle Embeddings in PostgreSQL gespeichert.")
+
+
+def store_emmbedings():
+    pass

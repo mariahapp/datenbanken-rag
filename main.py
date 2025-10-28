@@ -6,7 +6,7 @@ from lib import (
     chunk_text,
     save_chunks_to_mongo,
     #connect_to_pg
-    generate_and_store_embeddings
+    generate_embeddings
 )
 
 def main():
@@ -30,9 +30,8 @@ def main():
 
     save_chunks_to_mongo(all_chunks, uri=mongo_uri)
 
-    #connect_to_pg()
-    # Nach Mongo-Speicherung → Embeddings erzeugen und in Postgres speichern
-    generate_and_store_embeddings(all_chunks)
+
+    generate_embeddings(mongo_uri=mongo_uri)
 
  
 

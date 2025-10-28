@@ -9,6 +9,7 @@ services:
     depends_on:
       - mongo
       - postgres
+      - ollama
     networks:
       - rag-net
     environment:
@@ -19,6 +20,7 @@ services:
       - POSTGRES_DB=embedding_db
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
+      - OLLAMA_HOST=http://ollama:11434
 
   mongo:
     image: mongo:latest
@@ -59,8 +61,6 @@ services:
         - rag-net
 
 
-
-
 networks:
   rag-net:
     driver: bridge
@@ -69,8 +69,3 @@ volumes:
   mongo_data:
   postgres_data:
   ollama_data:
-
-  
-
-
-    
