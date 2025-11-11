@@ -50,14 +50,14 @@ services:
 
   ollama:
     image: ollama/ollama:latest
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-    environment:
-      - OLLAMA_MODEL=mxbai-embed-small
-    command: ["sh", "-c", "ollama pull mxbai-embed-small && ollama api"]
+    container_name: ollama
     restart: unless-stopped
+    ports:
+      - "11434:11434"   # API-Port für Ollama
+    volumes:
+      - ollama_data:/root/.ollama  # Modelle persistent speichern
+    environment:
+      - OLLAMA_HOST=0.0.0.0
     networks:                    
         - rag-net
 

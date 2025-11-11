@@ -152,7 +152,7 @@ def generate_embeddings(mongo_uri=None):
     ollama_host = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 
     embed = OllamaEmbeddings(
-        model="mxbai-embed-small",
+        model="phi3:mini",
         base_url=ollama_host
     )
 
