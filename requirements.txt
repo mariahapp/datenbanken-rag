@@ -2,6 +2,6 @@ pymongo
 PyMuPDF==1.22.5
 psycopg2-binary
 tqdm
-ollama>=0.1.8
-langchain>=0.2.11
-langchain-ollama>=0.1.1
+langchain>=0.2.15
+langchain-ollama>=0.1.4
+ollama>=0.1.9

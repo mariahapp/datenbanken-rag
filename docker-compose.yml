@@ -21,6 +21,7 @@ services:
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
       - OLLAMA_HOST=http://ollama:11434
+      - OLLAMA_MODEL=nomic-embed-text
 
   mongo:
     image: mongo:latest
@@ -53,13 +54,11 @@ services:
     container_name: ollama
     restart: unless-stopped
     ports:
-      - "11434:11434"   # API-Port für Ollama
+      - "11434:11434"
     volumes:
-      - ollama_data:/root/.ollama  # Modelle persistent speichern
-    environment:
-      - OLLAMA_HOST=0.0.0.0
-    networks:                    
-        - rag-net
+      - ollama_data:/root/.ollama
+    networks:
+      - rag-net
 
 
 networks:

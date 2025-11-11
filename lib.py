@@ -146,24 +146,35 @@ def connect_to_pg(max_retries=15, delay=3):
 # Liest alle Text-Chunks aus MongoDB, erzeugt Embeddings mit Ollama
 # und speichert sie in PostgreSQL (pgvector).
 def generate_embeddings(mongo_uri=None):
+    """
+    Lädt Textchunks aus MongoDB, erzeugt Embeddings über Ollama
+    und speichert sie in PostgreSQL (pgvector).
+    """
+
+    # --- PostgreSQL Verbindung ---
     conn, cur = connect_to_pg()
 
-    # ✅ Host aus ENV lesen
-    ollama_host = os.getenv("OLLAMA_HOST", "http://localhost:11434")
+    # --- Konfiguration ---
+    ollama_host = os.getenv("OLLAMA_HOST", "http://ollama:11434")
+    ollama_model = os.getenv("OLLAMA_MODEL", "nomic-embed-text")  # flexibel tauschbar
 
+    print(f"🚀 Verwende Ollama-Host: {ollama_host}")
+    print(f"🧠 Verwende Embedding-Modell: {ollama_model}")
+
+    # --- Verbindung zu Ollama vorbereiten ---
     embed = OllamaEmbeddings(
-        model="phi3:mini",
+        model=ollama_model,
         base_url=ollama_host
     )
 
-    # Mongo lesen
+    # --- Mongo lesen ---
     client = connect_to_mongo(mongo_uri)
     db = client["rag_db"]
     collection = db["raw_chunks"]
     chunks = list(collection.find({}, {"_id": 1, "text": 1}))
-
     print(f"📄 {len(chunks)} Chunks aus MongoDB geladen.")
 
+    # --- Tabelle in Postgres anlegen ---
     cur.execute("""
         CREATE TABLE IF NOT EXISTS chunk_embeddings (
             id SERIAL PRIMARY KEY,
@@ -172,9 +183,13 @@ def generate_embeddings(mongo_uri=None):
         );
     """)
 
-    for chunk in tqdm(chunks, desc="Erstelle Embeddings"):
-        text = chunk["text"]
+    # --- Embeddings generieren ---
+    for chunk in tqdm(chunks, desc="✨ Erstelle Embeddings"):
+        text = chunk.get("text", "")
         mongo_id = chunk["_id"]
+
+        if not text.strip():
+            continue
 
         try:
             emb = embed.embed_query(text)
@@ -188,7 +203,8 @@ def generate_embeddings(mongo_uri=None):
 
     conn.commit()
     conn.close()
-    print("✅ Alle Embeddings in PostgreSQL gespeichert.")
+    print("✅ Alle Embeddings wurden erfolgreich in PostgreSQL gespeichert.")
+
 
 
 def store_emmbedings():
