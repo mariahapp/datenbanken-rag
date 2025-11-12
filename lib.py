@@ -175,11 +175,12 @@ def generate_embeddings(mongo_uri=None):
     print(f"📄 {len(chunks)} Chunks aus MongoDB geladen.")
 
     # --- Tabelle in Postgres anlegen ---
-    cur.execute("""
+    vector_dim = int(os.getenv("EMBEDDING_DIM", 768))
+    cur.execute(f"""
         CREATE TABLE IF NOT EXISTS chunk_embeddings (
             id SERIAL PRIMARY KEY,
             chunk_mongo_id TEXT,
-            embedding VECTOR(1024)
+            embedding VECTOR({vector_dim})
         );
     """)
 
@@ -204,8 +205,3 @@ def generate_embeddings(mongo_uri=None):
     conn.commit()
     conn.close()
     print("✅ Alle Embeddings wurden erfolgreich in PostgreSQL gespeichert.")
-
-
-
-def store_emmbedings():
-    pass
