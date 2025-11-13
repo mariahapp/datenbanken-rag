@@ -148,7 +148,8 @@ def connect_to_pg(max_retries=15, delay=3):
 def generate_embeddings(mongo_uri=None):
     """
     Lädt Textchunks aus MongoDB, erzeugt Embeddings über Ollama
-    und speichert sie in PostgreSQL (pgvector).
+    und speichert sie in PostgreSQL (pgvector), ohne Duplikate.
+    Optimierte Version für große Datenmengen.
     """
 
     # --- PostgreSQL Verbindung ---
@@ -156,10 +157,12 @@ def generate_embeddings(mongo_uri=None):
 
     # --- Konfiguration ---
     ollama_host = os.getenv("OLLAMA_HOST", "http://ollama:11434")
-    ollama_model = os.getenv("OLLAMA_MODEL", "nomic-embed-text")  # flexibel tauschbar
+    ollama_model = os.getenv("OLLAMA_MODEL", "nomic-embed-text")
+    vector_dim = int(os.getenv("EMBEDDING_DIM", 768))
 
     print(f"🚀 Verwende Ollama-Host: {ollama_host}")
     print(f"🧠 Verwende Embedding-Modell: {ollama_model}")
+    print(f"📏 Embedding-Dimension: {vector_dim}")
 
     # --- Verbindung zu Ollama vorbereiten ---
     embed = OllamaEmbeddings(
@@ -175,33 +178,47 @@ def generate_embeddings(mongo_uri=None):
     print(f"📄 {len(chunks)} Chunks aus MongoDB geladen.")
 
     # --- Tabelle in Postgres anlegen ---
-    vector_dim = int(os.getenv("EMBEDDING_DIM", 768))
     cur.execute(f"""
         CREATE TABLE IF NOT EXISTS chunk_embeddings (
             id SERIAL PRIMARY KEY,
-            chunk_mongo_id TEXT,
+            chunk_mongo_id TEXT UNIQUE,
             embedding VECTOR({vector_dim})
         );
     """)
+    conn.commit()
+
+    # --- Bereits vorhandene Chunks aus Postgres laden ---
+    cur.execute("SELECT chunk_mongo_id FROM chunk_embeddings;")
+    existing_ids = {row[0] for row in cur.fetchall()}
+    print(f"🧮 {len(existing_ids)} vorhandene Embeddings gefunden.")
+
+    # --- Nur neue Chunks verarbeiten ---
+    new_chunks = [c for c in chunks if str(c["_id"]) not in existing_ids]
+    print(f"🆕 {len(new_chunks)} neue Chunks, die Embeddings benötigen.")
 
     # --- Embeddings generieren ---
-    for chunk in tqdm(chunks, desc="✨ Erstelle Embeddings"):
-        text = chunk.get("text", "")
-        mongo_id = chunk["_id"]
-
-        if not text.strip():
+    inserted = 0
+    for chunk in tqdm(new_chunks, desc="✨ Erstelle neue Embeddings"):
+        text = chunk.get("text", "").strip()
+        if not text:
             continue
 
+        mongo_id = str(chunk["_id"])
         try:
             emb = embed.embed_query(text)
             cur.execute(
-                "INSERT INTO chunk_embeddings (chunk_mongo_id, embedding) VALUES (%s, %s)",
+                "INSERT INTO chunk_embeddings (chunk_mongo_id, embedding) VALUES (%s, %s) ON CONFLICT DO NOTHING;",
                 (mongo_id, emb)
             )
+            inserted += 1
+
         except Exception as e:
             print(f"⚠️ Fehler bei Chunk {mongo_id}: {e}")
             continue
 
     conn.commit()
     conn.close()
-    print("✅ Alle Embeddings wurden erfolgreich in PostgreSQL gespeichert.")
+    client.close()
+
+    print(f"✅ {inserted} neue Embeddings gespeichert.")
+    print(f"↩️ {len(existing_ids)} Chunks waren bereits vorhanden.")
