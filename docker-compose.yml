@@ -23,6 +23,7 @@ services:
       - OLLAMA_HOST=http://ollama:11434
       - OLLAMA_MODEL=nomic-embed-text
       - EMBEDDING_DIM=768
+      - GENERATION_MODEL=phi3:mini
 
   mongo:
     image: mongo:latest

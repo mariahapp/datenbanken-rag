@@ -222,3 +222,63 @@ def generate_embeddings(mongo_uri=None):
 
     print(f"✅ {inserted} neue Embeddings gespeichert.")
     print(f"↩️ {len(existing_ids)} Chunks waren bereits vorhanden.")
+
+
+def rag_query(prompt, top_k=3, mongo_uri=None):
+    """
+    Führt eine semantische Suche durch und generiert eine LLM-Antwort.
+    """
+
+    # --- Konfiguration ---
+    ollama_host = os.getenv("OLLAMA_HOST", "http://ollama:11434")
+    embedding_model = os.getenv("OLLAMA_MODEL", "nomic-embed-text")
+    generation_model = os.getenv("GENERATION_MODEL", "phi3:mini")
+
+    print(f"🚀 Verwende Ollama-Host: {ollama_host}")
+    print(f"🧠 Embedding-Modell: {embedding_model}")
+    print(f"💬 Generations-Modell: {generation_model}")
+
+    # --- 1️⃣ Embedding für die User-Frage ---
+    embedder = OllamaEmbeddings(model=embedding_model, base_url=ollama_host)
+    query_vector = embedder.embed_query(prompt)
+
+    # --- 2️⃣ Ähnliche Chunks aus Postgres holen ---
+    conn, cur = connect_to_pg()
+    cur.execute("""
+        SELECT chunk_mongo_id,
+               1 - (embedding <=> %s::vector) AS similarity
+        FROM chunk_embeddings
+        ORDER BY similarity DESC
+        LIMIT %s;
+    """, (query_vector, top_k))
+    similar_chunks = cur.fetchall()
+    conn.close()
+
+    if not similar_chunks:
+        return "❌ Keine passenden Dokumente gefunden."
+
+    # --- 3️⃣ Texte aus Mongo holen ---
+    client = connect_to_mongo(mongo_uri)
+    db = client["rag_db"]
+    coll = db["raw_chunks"]
+
+    chunk_ids = [cid for (cid, _) in similar_chunks]
+    docs = list(coll.find({"_id": {"$in": chunk_ids}}, {"text": 1}))
+    client.close()
+
+    # --- 4️⃣ Kontext zusammenbauen ---
+    context = "\n\n".join([d["text"] for d in docs])
+    full_prompt = f"Beantworte die folgende Frage basierend auf dem Kontext.\n\n" \
+                  f"Frage: {prompt}\n\n" \
+                  f"Kontext:\n{context}"
+
+    # --- 5️⃣ Antwort vom LLM ---
+    response = ollama.chat(
+        model=generation_model,
+        messages=[{"role": "user", "content": full_prompt}],
+        options={"temperature": 0.2}
+    )
+
+    answer = response["message"]["content"]
+    print("\n🤖 Antwort:\n", answer)
+    return answer

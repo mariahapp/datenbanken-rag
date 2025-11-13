@@ -6,7 +6,8 @@ from lib import (
     chunk_text,
     save_chunks_to_mongo,
     #connect_to_pg
-    generate_embeddings
+    generate_embeddings,
+    rag_query
 )
 
 def main():
@@ -29,10 +30,11 @@ def main():
         print(f"[DEBUG] {len(chunks)} Chunks aus {name} erzeugt.")
 
     save_chunks_to_mongo(all_chunks, uri=mongo_uri)
-
-
     generate_embeddings(mongo_uri=mongo_uri)
 
+    # --- 🔍 Benutzerabfrage ---
+    frage = input("\n❓ Gib deine Frage ein: ")
+    rag_query(frage, mongo_uri=mongo_uri)
  
 
 if __name__ == "__main__":
