@@ -1,11 +1,14 @@
 ## Hilfreiche Befehle
-docker compose up -d
-docker compose run rag-app
+- docker compose up -d
+- docker compose run rag-app
 
 Beim ersten start vom container sich die modelle holen:
-Im Ollama container zu Exec gehen:
-ollama pull nomic-embed-text
-ollama pull phi3:mini
+
+Im Ollama container zu Exec gehen
+
+- ollama pull nomic-embed-text
+
+- ollama pull phi3:mini
 
 ## Schritt 2: Inhalte der Dateien auslesen
 1. **Textbasierte Dateien (.txt, .md)** → einfach einlesen, z. B. mit `open()`
