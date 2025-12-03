@@ -1,4 +1,5 @@
 # pipeline for reading, splitting and saving of the documents
+# test commit line
 import os
 from lib import (
     read_files,
@@ -11,7 +12,7 @@ from lib import (
 )
 
 def main():
-    folder = os.environ.get("DATA_DIR", "/app/data") 
+    folder = os.environ.get("DATA_DIR", "/app/data")
     mongo_uri = os.environ.get("MONGO_URI", "mongodb://user123:password123@mongo:27017/")
 
     files = read_files(folder, filetypes=["pdf","txt","md"])
@@ -35,9 +36,7 @@ def main():
     # --- 🔍 Benutzerabfrage ---
     frage = input("\n❓ Gib deine Frage ein: ")
     rag_query(frage, mongo_uri=mongo_uri)
- 
+
 
 if __name__ == "__main__":
     main()
-
-
